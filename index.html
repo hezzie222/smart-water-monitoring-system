@@ -1,18 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Water Monitoring System</title>
-
-  <!-- Chart.js for data visualization -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Bootstrap CSS & JS for responsive layout and components -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- Custom Styles -->
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js"></script>
   <style>
     :root {
       --bg-color: #f8f9fa;
@@ -20,40 +17,32 @@
       --primary-color: #007bff;
       --header-bg: #0d6efd;
     }
-
-    /* Dark theme variables */
     [data-theme="dark"] {
       --bg-color: #1c1f2e;
       --text-color: #f8f9fa;
       --primary-color: #0dcaf0;
       --header-bg: #1f2633;
     }
-
     body {
       background-color: var(--bg-color);
       color: var(--text-color);
       transition: background-color 0.3s, color 0.3s;
     }
-
     .navbar, .card-header {
       background-color: var(--header-bg);
       color: white;
     }
-
     .card {
       box-shadow: 0 4px 10px rgba(0,0,0,0.05);
       margin-bottom: 1rem;
     }
-
     .form-section {
       max-width: 500px;
       margin: 2rem auto;
     }
-
     .dashboard {
       display: none;
     }
-
     .chart-container {
       position: relative;
       height: 300px;
@@ -62,53 +51,49 @@
 </head>
 <body data-theme="light">
 
-<!-- Navigation Bar -->
 <nav class="navbar navbar-expand-lg navbar-dark">
   <div class="container-fluid">
     <span class="navbar-brand">Smart Water Monitoring</span>
-    <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()">🌓 Toggle Theme</button>
+    <div>
+      <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()">🌓 Toggle Theme</button>
+      <button class="btn btn-outline-warning btn-sm d-none" id="logoutBtn" onclick="logoutUser()">Logout</button>
+    </div>
   </div>
 </nav>
 
-<!-- Main Container -->
 <div class="container mt-4">
-
-  <!-- Sign Up Section -->
   <div class="form-section" id="signupSection">
     <h3 class="text-center">Sign Up</h3>
     <div class="mb-3">
-      <label for="signupUsername" class="form-label">Username</label>
-      <input type="text" class="form-control" id="signupUsername" required>
+      <label for="signupEmail" class="form-label">Email</label>
+      <input type="email" class="form-control" id="signupEmail">
     </div>
     <div class="mb-3">
       <label for="signupPassword" class="form-label">Password</label>
-      <input type="password" class="form-control" id="signupPassword" required>
+      <input type="password" class="form-control" id="signupPassword">
     </div>
     <button class="btn btn-primary w-100" onclick="signUpUser()">Create Account</button>
     <p class="text-center mt-3">Already have an account? <a href="#" onclick="showLogin()">Log in</a></p>
   </div>
 
-  <!-- Login Section -->
   <div class="form-section" id="loginSection">
     <h3 class="text-center">Login</h3>
     <div class="mb-3">
-      <label for="loginUsername" class="form-label">Username</label>
-      <input type="text" class="form-control" id="loginUsername" required>
+      <label for="loginEmail" class="form-label">Email</label>
+      <input type="email" class="form-control" id="loginEmail">
     </div>
     <div class="mb-3">
       <label for="loginPassword" class="form-label">Password</label>
-      <input type="password" class="form-control" id="loginPassword" required>
+      <input type="password" class="form-control" id="loginPassword">
     </div>
     <button class="btn btn-success w-100" onclick="loginUser()">Sign In</button>
     <p class="text-center mt-3">Don't have an account? <a href="#" onclick="showSignup()">Sign up</a></p>
   </div>
 
-  <!-- Dashboard Section -->
   <div class="dashboard" id="dashboardSection">
     <h3 class="text-center mb-4">Welcome, <span id="userDisplay"></span></h3>
 
     <div class="row">
-      <!-- Water Level Summary Card -->
       <div class="col-md-4">
         <div class="card text-center">
           <div class="card-header">Water Level</div>
@@ -119,8 +104,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Live Water Level Chart -->
       <div class="col-md-8">
         <div class="card">
           <div class="card-header">Live Water Level</div>
@@ -131,7 +114,6 @@
       </div>
     </div>
 
-    <!-- Weekly Water Usage Chart -->
     <div class="card mt-4">
       <div class="card-header">Weekly Water Usage</div>
       <div class="card-body chart-container">
@@ -141,65 +123,71 @@
   </div>
 </div>
 
-<!-- JavaScript Section -->
-<script>
-  let users = []; // Simulated user database (for demo only)
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
-  // Toggle between light and dark themes
-  function toggleTheme() {
-    const currentTheme = document.body.getAttribute("data-theme");
-    document.body.setAttribute("data-theme", currentTheme === "light" ? "dark" : "light");
-  }
+  const firebaseConfig = {
+    apiKey: "AIzaSyDJMq0OwWS_OvKxnI-E_hz0R9w71O50a5U",
+    authDomain: "water-lever-monitoring-system.firebaseapp.com",
+    databaseURL: "https://water-lever-monitoring-system-default-rtdb.firebaseio.com",
+    projectId: "water-lever-monitoring-system",
+    storageBucket: "water-lever-monitoring-system.appspot.com",
+    messagingSenderId: "50485783446",
+    appId: "1:50485783446:web:f2510c845c0e3a4b480bb7"
+  };
 
-  // Show Login form
-  function showLogin() {
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth();
+  const db = getDatabase();
+
+  window.toggleTheme = () => {
+    const theme = document.body.getAttribute("data-theme");
+    document.body.setAttribute("data-theme", theme === "light" ? "dark" : "light");
+  };
+
+  window.showLogin = () => {
     document.getElementById("signupSection").style.display = 'none';
     document.getElementById("loginSection").style.display = 'block';
-  }
+  };
 
-  // Show Sign Up form
-  function showSignup() {
+  window.showSignup = () => {
     document.getElementById("loginSection").style.display = 'none';
     document.getElementById("signupSection").style.display = 'block';
-  }
+  };
 
-  // Sign up a new user
-  function signUpUser() {
-    const username = document.getElementById("signupUsername").value.trim();
+  window.signUpUser = () => {
+    const email = document.getElementById("signupEmail").value.trim();
     const password = document.getElementById("signupPassword").value.trim();
-    
-    if (!username || !password) return alert("Please fill in all fields.");
-    if (users.some(u => u.username === username)) return alert("Username already exists.");
-    
-    users.push({ username, password });
-    alert("Account created successfully! Please log in.");
-    showLogin();
-  }
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(() => alert("Account created successfully!"))
+      .catch(err => alert(err.message));
+  };
 
-  // Authenticate and log in a user
-  function loginUser() {
-    const username = document.getElementById("loginUsername").value.trim();
+  window.loginUser = () => {
+    const email = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPassword").value.trim();
-    
-    const user = users.find(u => u.username === username && u.password === password);
-    if (!user) return alert("Invalid login credentials.");
-    
-    document.getElementById("loginSection").style.display = 'none';
+    signInWithEmailAndPassword(auth, email, password)
+      .catch(err => alert("Login failed: " + err.message));
+  };
+
+  window.logoutUser = () => {
+    signOut(auth);
+  };
+
+  function initializeDashboard(user) {
     document.getElementById("dashboardSection").style.display = 'block';
-    document.getElementById("userDisplay").textContent = username;
+    document.getElementById("loginSection").style.display = 'none';
+    document.getElementById("signupSection").style.display = 'none';
+    document.getElementById("userDisplay").textContent = user.email;
+    document.getElementById("logoutBtn").classList.remove("d-none");
 
-    initializeDashboard(); // Load charts and start updates
-  }
-
-  // Initialize dashboard charts and simulate updates
-  function initializeDashboard() {
-    let chartLabels = [];
-    let chartData = [];
-
+    const chartLabels = [];
+    const chartData = [];
     const ctx1 = document.getElementById("levelChart").getContext("2d");
     const ctx2 = document.getElementById("usageChart").getContext("2d");
 
-    // Line chart for real-time water level
     const levelChart = new Chart(ctx1, {
       type: 'line',
       data: {
@@ -216,21 +204,16 @@
       options: {
         responsive: true,
         scales: {
-          y: {
-            min: 0,
-            max: 100,
-            title: { display: true, text: "Level (%)" }
-          },
+          y: { min: 0, max: 100, title: { display: true, text: "Level (%)" } },
           x: { title: { display: true, text: "Time" } }
         }
       }
     });
 
-    // Static bar chart for weekly usage
-    const usageChart = new Chart(ctx2, {
+    new Chart(ctx2, {
       type: 'bar',
       data: {
-        labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
         datasets: [{
           label: 'Liters Used',
           data: [150, 180, 100, 130, 90],
@@ -239,40 +222,36 @@
       },
       options: {
         responsive: true,
-        plugins: {
-          title: { display: true, text: 'Weekly Water Usage' }
-        }
+        plugins: { title: { display: true, text: 'Weekly Water Usage' } }
       }
     });
 
-    // Simulate water level updates every 5 seconds
-    function update() {
-      let waterLevel = Math.floor(Math.random() * 100); // Simulated level
+    const dataRef = ref(db, 'waterLevel');
+    onValue(dataRef, snapshot => {
+      const level = snapshot.val();
       const time = new Date().toLocaleTimeString();
-
-      document.getElementById("waterLevel").textContent = `${waterLevel}%`;
+      document.getElementById("waterLevel").textContent = `${level}%`;
       document.getElementById("lastUpdated").textContent = time;
-      document.getElementById("tankStatus").textContent = 
-        waterLevel > 75 ? 'Full' : 
-        waterLevel > 40 ? 'Medium' : 
-        waterLevel > 10 ? 'Low' : 'Empty';
-
-      // Update chart data
+      document.getElementById("tankStatus").textContent = level > 75 ? 'Full' : (level > 40 ? 'Medium' : (level > 10 ? 'Low' : 'Empty'));
       if (chartLabels.length >= 10) {
         chartLabels.shift();
         chartData.shift();
       }
       chartLabels.push(time);
-      chartData.push(waterLevel);
+      chartData.push(level);
       levelChart.update();
-    }
-
-    update();
-    setInterval(update, 5000);
+    });
   }
 
-  // Show signup by default on page load
-  showSignup();
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      initializeDashboard(user);
+    } else {
+      document.getElementById("dashboardSection").style.display = 'none';
+      document.getElementById("logoutBtn").classList.add("d-none");
+      showLogin();
+    }
+  });
 </script>
 
 </body>
