@@ -1,15 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Smart Water Monitoring System</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js"></script>
   <style>
     :root {
       --bg-color: #f8f9fa;
@@ -26,177 +22,114 @@
     body {
       background-color: var(--bg-color);
       color: var(--text-color);
-      transition: background-color 0.3s, color 0.3s;
+      transition: 0.3s;
     }
     .navbar, .card-header {
       background-color: var(--header-bg);
       color: white;
     }
-    .card {
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-      margin-bottom: 1rem;
-    }
     .form-section {
-      max-width: 500px;
+      max-width: 400px;
       margin: 2rem auto;
     }
     .dashboard {
       display: none;
     }
     .chart-container {
-      position: relative;
       height: 300px;
     }
   </style>
 </head>
 <body data-theme="light">
-
-<nav class="navbar navbar-expand-lg navbar-dark">
-  <div class="container-fluid">
-    <span class="navbar-brand">Smart Water Monitoring</span>
-    <div>
-      <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()">🌓 Toggle Theme</button>
-      <button class="btn btn-outline-warning btn-sm d-none" id="logoutBtn" onclick="logoutUser()">Logout</button>
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+      <span class="navbar-brand">Smart Water Monitoring</span>
+      <div>
+        <button class="btn btn-outline-light btn-sm me-2" onclick="toggleTheme()">🌓 Theme</button>
+        <button class="btn btn-outline-warning btn-sm d-none" id="logoutBtn" onclick="logoutUser()">Logout</button>
+      </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<div class="container mt-4">
-  <div class="form-section" id="signupSection">
-    <h3 class="text-center">Sign Up</h3>
-    <div class="mb-3">
-      <label for="signupEmail" class="form-label">Email</label>
-      <input type="email" class="form-control" id="signupEmail">
+  <div class="container mt-4">
+    <div class="form-section" id="signupSection">
+      <h4 class="text-center">Sign Up</h4>
+      <input type="email" class="form-control mb-2" id="signupEmail" placeholder="Email">
+      <input type="password" class="form-control mb-2" id="signupPassword" placeholder="Password">
+      <button class="btn btn-primary w-100" onclick="signUpUser()">Create Account</button>
+      <p class="text-center mt-2">Already have an account? <a href="#" onclick="showLogin()">Log in</a></p>
     </div>
-    <div class="mb-3">
-      <label for="signupPassword" class="form-label">Password</label>
-      <input type="password" class="form-control" id="signupPassword">
-    </div>
-    <button class="btn btn-primary w-100" onclick="signUpUser()">Create Account</button>
-    <p class="text-center mt-3">Already have an account? <a href="#" onclick="showLogin()">Log in</a></p>
-  </div>
 
-  <div class="form-section" id="loginSection">
-    <h3 class="text-center">Login</h3>
-    <div class="mb-3">
-      <label for="loginEmail" class="form-label">Email</label>
-      <input type="email" class="form-control" id="loginEmail">
+    <div class="form-section" id="loginSection" style="display: none;">
+      <h4 class="text-center">Login</h4>
+      <input type="email" class="form-control mb-2" id="loginEmail" placeholder="Email">
+      <input type="password" class="form-control mb-2" id="loginPassword" placeholder="Password">
+      <button class="btn btn-success w-100" onclick="loginUser()">Sign In</button>
+      <p class="text-center mt-2">Don't have an account? <a href="#" onclick="showSignup()">Sign up</a></p>
     </div>
-    <div class="mb-3">
-      <label for="loginPassword" class="form-label">Password</label>
-      <input type="password" class="form-control" id="loginPassword">
-    </div>
-    <button class="btn btn-success w-100" onclick="loginUser()">Sign In</button>
-    <p class="text-center mt-3">Don't have an account? <a href="#" onclick="showSignup()">Sign up</a></p>
-  </div>
 
-  <div class="dashboard" id="dashboardSection">
-    <h3 class="text-center mb-4">Welcome, <span id="userDisplay"></span></h3>
-
-    <div class="row">
-      <div class="col-md-4">
-        <div class="card text-center">
-          <div class="card-header">Water Level</div>
-          <div class="card-body">
-            <h4 id="waterLevel">0%</h4>
-            <p>Status: <strong id="tankStatus">-</strong></p>
-            <p>Last Update: <span id="lastUpdated">--:--</span></p>
+    <div class="dashboard" id="dashboardSection">
+      <h4 class="text-center mb-4">Welcome, <span id="userDisplay"></span></h4>
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card text-center">
+            <div class="card-header">Water Level</div>
+            <div class="card-body">
+              <h4 id="waterLevel">0%</h4>
+              <p>Status: <strong id="tankStatus">-</strong></p>
+              <p>Last Update: <span id="lastUpdated">--:--</span></p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header">Live Water Level</div>
+            <div class="card-body chart-container">
+              <canvas id="levelChart"></canvas>
+            </div>
           </div>
         </div>
       </div>
-      <div class="col-md-8">
-        <div class="card">
-          <div class="card-header">Live Water Level</div>
-          <div class="card-body chart-container">
-            <canvas id="levelChart"></canvas>
-          </div>
+      <div class="card mt-4">
+        <div class="card-header">Weekly Water Usage</div>
+        <div class="card-body chart-container">
+          <canvas id="usageChart"></canvas>
         </div>
       </div>
     </div>
-
-    <div class="card mt-4">
-      <div class="card-header">Weekly Water Usage</div>
-      <div class="card-body chart-container">
-        <canvas id="usageChart"></canvas>
-      </div>
-    </div>
   </div>
-</div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+  <!-- Firebase & Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDJMq0OwWS_OvKxnI-E_hz0R9w71O50a5U",
-    authDomain: "water-lever-monitoring-system.firebaseapp.com",
-    databaseURL: "https://water-lever-monitoring-system-default-rtdb.firebaseio.com",
-    projectId: "water-lever-monitoring-system",
-    storageBucket: "water-lever-monitoring-system.appspot.com",
-    messagingSenderId: "50485783446",
-    appId: "1:50485783446:web:f2510c845c0e3a4b480bb7"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJMq0OwWS_OvKxnI-E_hz0R9w71O50a5U",
+      authDomain: "water-lever-monitoring-system.firebaseapp.com",
+      databaseURL: "https://water-lever-monitoring-system-default-rtdb.firebaseio.com",
+      projectId: "water-lever-monitoring-system",
+      storageBucket: "water-lever-monitoring-system.appspot.com",
+      messagingSenderId: "50485783446",
+      appId: "1:50485783446:web:f2510c845c0e3a4b480bb7"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth();
-  const db = getDatabase();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase();
 
-  window.toggleTheme = () => {
-    const theme = document.body.getAttribute("data-theme");
-    document.body.setAttribute("data-theme", theme === "light" ? "dark" : "light");
-  };
-
-  window.showLogin = () => {
-    document.getElementById("signupSection").style.display = 'none';
-    document.getElementById("loginSection").style.display = 'block';
-  };
-
-  window.showSignup = () => {
-    document.getElementById("loginSection").style.display = 'none';
-    document.getElementById("signupSection").style.display = 'block';
-  };
-
-  window.signUpUser = () => {
-    const email = document.getElementById("signupEmail").value.trim();
-    const password = document.getElementById("signupPassword").value.trim();
-    createUserWithEmailAndPassword(auth, email, password)
-      .then(() => alert("Account created successfully!"))
-      .catch(err => alert(err.message));
-  };
-
-  window.loginUser = () => {
-    const email = document.getElementById("loginEmail").value.trim();
-    const password = document.getElementById("loginPassword").value.trim();
-    signInWithEmailAndPassword(auth, email, password)
-      .catch(err => alert("Login failed: " + err.message));
-  };
-
-  window.logoutUser = () => {
-    signOut(auth);
-  };
-
-  function initializeDashboard(user) {
-    document.getElementById("dashboardSection").style.display = 'block';
-    document.getElementById("loginSection").style.display = 'none';
-    document.getElementById("signupSection").style.display = 'none';
-    document.getElementById("userDisplay").textContent = user.email;
-    document.getElementById("logoutBtn").classList.remove("d-none");
-
-    const chartLabels = [];
-    const chartData = [];
-    const ctx1 = document.getElementById("levelChart").getContext("2d");
-    const ctx2 = document.getElementById("usageChart").getContext("2d");
-
-    const levelChart = new Chart(ctx1, {
-      type: 'line',
+    const levelChartLabels = [];
+    const levelChartData = [];
+    const levelChart = new Chart(document.getElementById("levelChart").getContext("2d"), {
+      type: "line",
       data: {
-        labels: chartLabels,
+        labels: levelChartLabels,
         datasets: [{
-          label: 'Water Level (%)',
-          data: chartData,
-          borderColor: '#0d6efd',
-          backgroundColor: 'rgba(13,110,253,0.2)',
+          label: "Water Level (%)",
+          data: levelChartData,
+          borderColor: "#0d6efd",
+          backgroundColor: "rgba(13,110,253,0.2)",
           fill: true,
           tension: 0.4
         }]
@@ -204,55 +137,96 @@
       options: {
         responsive: true,
         scales: {
-          y: { min: 0, max: 100, title: { display: true, text: "Level (%)" } },
+          y: { min: 0, max: 100 },
           x: { title: { display: true, text: "Time" } }
         }
       }
     });
 
-    new Chart(ctx2, {
-      type: 'bar',
+    const usageChart = new Chart(document.getElementById("usageChart").getContext("2d"), {
+      type: "bar",
       data: {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        labels: ["Mon", "Tue", "Wed", "Thu", "Fri"],
         datasets: [{
-          label: 'Liters Used',
+          label: "Liters Used",
           data: [150, 180, 100, 130, 90],
-          backgroundColor: '#0d6efd'
+          backgroundColor: "#0d6efd"
         }]
       },
-      options: {
-        responsive: true,
-        plugins: { title: { display: true, text: 'Weekly Water Usage' } }
-      }
+      options: { responsive: true }
     });
 
-    const dataRef = ref(db, 'waterLevel');
-    onValue(dataRef, snapshot => {
-      const level = snapshot.val();
-      const time = new Date().toLocaleTimeString();
+    function updateDashboard(level) {
+      const now = new Date().toLocaleTimeString();
       document.getElementById("waterLevel").textContent = `${level}%`;
-      document.getElementById("lastUpdated").textContent = time;
-      document.getElementById("tankStatus").textContent = level > 75 ? 'Full' : (level > 40 ? 'Medium' : (level > 10 ? 'Low' : 'Empty'));
-      if (chartLabels.length >= 10) {
-        chartLabels.shift();
-        chartData.shift();
+      document.getElementById("lastUpdated").textContent = now;
+
+      const status = level > 75 ? "Full" : level > 40 ? "Medium" : level > 10 ? "Low" : "Empty";
+      document.getElementById("tankStatus").textContent = status;
+
+      if (levelChartLabels.length >= 10) {
+        levelChartLabels.shift();
+        levelChartData.shift();
       }
-      chartLabels.push(time);
-      chartData.push(level);
+      levelChartLabels.push(now);
+      levelChartData.push(level);
       levelChart.update();
-    });
-  }
-
-  onAuthStateChanged(auth, user => {
-    if (user) {
-      initializeDashboard(user);
-    } else {
-      document.getElementById("dashboardSection").style.display = 'none';
-      document.getElementById("logoutBtn").classList.add("d-none");
-      showLogin();
     }
-  });
-</script>
 
+    function toggleDashboard(show, userEmail = "") {
+      document.getElementById("dashboardSection").style.display = show ? "block" : "none";
+      document.getElementById("loginSection").style.display = show ? "none" : "block";
+      document.getElementById("signupSection").style.display = show ? "none" : "block";
+      document.getElementById("logoutBtn").classList.toggle("d-none", !show);
+      document.getElementById("userDisplay").textContent = userEmail;
+    }
+
+    window.signUpUser = () => {
+      const email = document.getElementById("signupEmail").value;
+      const password = document.getElementById("signupPassword").value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => alert("Account created!"))
+        .catch(err => alert(err.message));
+    };
+
+    window.loginUser = () => {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+      signInWithEmailAndPassword(auth, email, password)
+        .catch(err => alert("Login failed: " + err.message));
+    };
+
+    window.logoutUser = () => {
+      signOut(auth);
+    };
+
+    window.toggleTheme = () => {
+      const current = document.body.getAttribute("data-theme");
+      document.body.setAttribute("data-theme", current === "light" ? "dark" : "light");
+    };
+
+    window.showLogin = () => {
+      document.getElementById("signupSection").style.display = "none";
+      document.getElementById("loginSection").style.display = "block";
+    };
+
+    window.showSignup = () => {
+      document.getElementById("loginSection").style.display = "none";
+      document.getElementById("signupSection").style.display = "block";
+    };
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        toggleDashboard(true, user.email);
+        const refPath = ref(db, "waterLevel");
+        onValue(refPath, snapshot => {
+          const level = snapshot.val();
+          if (typeof level === "number") updateDashboard(level);
+        });
+      } else {
+        toggleDashboard(false);
+      }
+    });
+  </script>
 </body>
 </html>
